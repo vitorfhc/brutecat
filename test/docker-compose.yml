@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  vsftp:
+    image: webdevops/vsftp
+    ports:
+      - "21:21"
+    env_file:
+      - ftp.env
