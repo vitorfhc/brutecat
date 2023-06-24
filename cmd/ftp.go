@@ -45,7 +45,7 @@ var ftpCmd = &cobra.Command{
 		}
 
 		engine.OnErrorCallback = func(err error) {
-			if strings.Contains(err.Error(), "operation was canceled") {
+			if strings.Contains(err.Error(), "operation was canceled") || strings.Contains(err.Error(), "RunWithContext") {
 				return
 			}
 			logrus.Error(err)

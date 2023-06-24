@@ -7,6 +7,7 @@ import (
 
 	"github.com/jlaffaye/ftp"
 	brutecat "github.com/vitorfhc/brutecat/pkg"
+	"github.com/vitorfhc/brutecat/pkg/utils"
 )
 
 type FTP struct {
@@ -16,15 +17,23 @@ type FTP struct {
 
 func (a *FTP) Authenticate(ctx context.Context, creds brutecat.Credentials) (bool, error) {
 	addr := fmt.Sprintf("%s:%d", a.Host, a.Port)
+	var conn *ftp.ServerConn
 
-	options := ftp.DialWithContext(ctx)
-	conn, err := ftp.Dial(addr, options)
+	// We have to do this because the FTP library is not handling the context
+	// properly. It's probably not watching for the context to be canceled.
+	err := utils.RunWithContext(ctx, func() error {
+		var err error
+		conn, err = ftp.Dial(addr)
+		return err
+	})
 	if err != nil {
 		return false, err
 	}
 	defer conn.Quit()
 
-	err = conn.Login(creds.Username, creds.Password)
+	err = utils.RunWithContext(ctx, func() error {
+		return conn.Login(creds.Username, creds.Password)
+	})
 	if err != nil && strings.Contains(err.Error(), "530") {
 		return false, nil
 	} else if err != nil {

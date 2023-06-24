@@ -2,6 +2,8 @@ package utils
 
 import (
 	"bufio"
+	"context"
+	"fmt"
 	"os"
 	"strings"
 )
@@ -27,4 +29,18 @@ func FileLinesToSlice(filename string) ([]string, error) {
 	}
 
 	return lines, nil
+}
+
+func RunWithContext(ctx context.Context, f func() error) error {
+	done := make(chan error, 1)
+	go func() {
+		done <- f()
+	}()
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("RunWithContext: %w", ctx.Err())
+	case err := <-done:
+		return err
+	}
 }
