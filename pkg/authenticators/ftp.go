@@ -27,6 +27,8 @@ func (a *FTP) Authenticate(ctx context.Context, creds brutecat.Credentials) (boo
 	err = conn.Login(creds.Username, creds.Password)
 	if err != nil && strings.Contains(err.Error(), "530") {
 		return false, nil
+	} else if err != nil {
+		return false, err
 	}
 
 	return true, nil
