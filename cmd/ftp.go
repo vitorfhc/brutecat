@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -61,6 +62,18 @@ var ftpCmd = &cobra.Command{
 		go func() {
 			defer wg.Done()
 			engine.Run(ctx)
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				logrus.Info(engine.RunStats)
+				if engine.RunStats.GetEnd() != nil {
+					return
+				}
+				time.Sleep(5 * time.Second)
+			}
 		}()
 
 		wg.Wait()

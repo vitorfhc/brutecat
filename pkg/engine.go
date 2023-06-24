@@ -24,6 +24,9 @@ type Engine struct {
 	OnErrorCallback   func(error)
 	OnSuccessCallback func(Credentials)
 	OnFailCallback    func(Credentials)
+
+	// Stats
+	RunStats *RunStats
 }
 
 type Credentials struct {
@@ -52,6 +55,8 @@ func NewEngine(users, passwords []string, threads uint16, authenticator Authenti
 		return nil, fmt.Errorf(errMsg)
 	}
 
+	runStats := NewStats(uint64(len(users) * len(passwords)))
+
 	return &Engine{
 		threads:           threads,
 		authenticator:     authenticator,
@@ -61,6 +66,7 @@ func NewEngine(users, passwords []string, threads uint16, authenticator Authenti
 		OnErrorCallback:   func(err error) {},
 		OnSuccessCallback: func(creds Credentials) {},
 		OnFailCallback:    func(creds Credentials) {},
+		RunStats:          runStats,
 	}, nil
 }
 
@@ -117,10 +123,13 @@ func (b *Engine) worker(ctx context.Context) {
 
 			valid, err := b.authenticator.Authenticate(ctx, creds)
 			if err != nil {
+				b.RunStats.AddError()
 				b.OnErrorCallback(err)
 			} else if valid {
+				b.RunStats.AddValidCredentials()
 				b.OnSuccessCallback(creds)
 			} else {
+				b.RunStats.AddInvalidCredentials()
 				b.OnFailCallback(creds)
 			}
 		case <-ctx.Done():
@@ -132,11 +141,13 @@ func (b *Engine) worker(ctx context.Context) {
 func (b *Engine) Run(ctx context.Context) {
 	err := b.authenticator.TestConnection(ctx)
 	if err != nil {
-		b.OnErrorCallback(err)
+		errMsg := fmt.Sprintf("error while testing connection: %s", err)
+		b.OnErrorCallback(fmt.Errorf(errMsg))
 		return
 	}
 
 	wgWorkers := sync.WaitGroup{}
+	b.RunStats.Start()
 
 	wgWorkers.Add(1)
 	go func() {
@@ -153,4 +164,5 @@ func (b *Engine) Run(ctx context.Context) {
 	}
 
 	wgWorkers.Wait()
+	b.RunStats.End()
 }
