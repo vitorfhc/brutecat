@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -15,18 +16,20 @@ var banner = `|\__/,|     ('\
 B R U T E C A T
 `
 
-type BruteCatConfig struct {
+type BruteCatOptions struct {
 	Threads       uint16
 	UsersFile     string
 	PasswordsFile string
 }
 
-type CLIConfig struct {
+type CLIOptions struct {
 	ContinueOnSuccess bool
+	StatsEvery        uint16
+	Ctx               context.Context
 }
 
-var bruteCatConfig BruteCatConfig
-var cliConfig CLIConfig
+var bruteCatOptions BruteCatOptions
+var cliOptions CLIOptions
 
 var rootCmd = &cobra.Command{
 	Use:   "brutecat",
@@ -61,10 +64,11 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "Enable debug output")
 
-	rootCmd.PersistentFlags().Uint16VarP(&bruteCatConfig.Threads, "threads", "t", 4, "Number of threads to use")
+	rootCmd.PersistentFlags().Uint16VarP(&bruteCatOptions.Threads, "threads", "t", 4, "Number of threads to use")
 
-	rootCmd.PersistentFlags().StringVarP(&bruteCatConfig.UsersFile, "users", "u", "users.txt", "File containing users to brute force")
-	rootCmd.PersistentFlags().StringVarP(&bruteCatConfig.PasswordsFile, "passwords", "p", "passwords.txt", "File containing passwords to brute force")
+	rootCmd.PersistentFlags().StringVarP(&bruteCatOptions.UsersFile, "users", "u", "users.txt", "File containing users to brute force")
+	rootCmd.PersistentFlags().StringVarP(&bruteCatOptions.PasswordsFile, "passwords", "p", "passwords.txt", "File containing passwords to brute force")
 
-	rootCmd.PersistentFlags().BoolVarP(&cliConfig.ContinueOnSuccess, "continue-on-success", "c", false, "Continue brute forcing even after finding a valid credential")
+	rootCmd.PersistentFlags().BoolVarP(&cliOptions.ContinueOnSuccess, "continue-on-success", "c", false, "Continue brute forcing even after finding a valid credential")
+	rootCmd.PersistentFlags().Uint16Var(&cliOptions.StatsEvery, "stats-every", 10, "Print stats every N seconds")
 }

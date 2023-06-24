@@ -23,9 +23,9 @@ var ftpCmd = &cobra.Command{
 
 		logrus.Info("Starting engine")
 		engine, err := brutecat.NewEngineWithFiles(
-			bruteCatConfig.UsersFile,
-			bruteCatConfig.PasswordsFile,
-			bruteCatConfig.Threads,
+			bruteCatOptions.UsersFile,
+			bruteCatOptions.PasswordsFile,
+			bruteCatOptions.Threads,
 			&ftpAuthenticator,
 		)
 		if err != nil {
@@ -38,7 +38,7 @@ var ftpCmd = &cobra.Command{
 
 		engine.OnSuccessCallback = func(creds brutecat.Credentials) {
 			logrus.Infof("Found credentials: %s:%s", creds.Username, creds.Password)
-			if !cliConfig.ContinueOnSuccess {
+			if !cliOptions.ContinueOnSuccess {
 				logrus.Info("Stopping engine, please wait")
 				cancel()
 			}
@@ -72,7 +72,7 @@ var ftpCmd = &cobra.Command{
 				if engine.RunStats.GetEnd() != nil {
 					return
 				}
-				time.Sleep(5 * time.Second)
+				time.Sleep(time.Duration(cliOptions.StatsEvery) * time.Second)
 			}
 		}()
 
