@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -31,6 +30,7 @@ var ftpCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		cliOptions.Engine = engine
 
 		bgCtx := context.Background()
 		ctx, cancel := context.WithCancel(bgCtx)
@@ -65,26 +65,9 @@ var ftpCmd = &cobra.Command{
 			engine.Run(ctx)
 		}()
 
-		wgStats := sync.WaitGroup{}
-		wgStats.Add(1)
-		statsCtx, statsCancel := context.WithCancel(bgCtx)
-		defer statsCancel()
-		go func() {
-			defer wgStats.Done()
-			defer logrus.Info(engine.RunStats)
-			for {
-				select {
-				case <-statsCtx.Done():
-					return
-				case <-time.After(time.Duration(cliOptions.StatsEvery) * time.Second):
-					logrus.Info(engine.RunStats)
-				}
-			}
-		}()
-
 		wg.Wait()
-		statsCancel()
-		wgStats.Wait()
+		cliOptions.Cancel()
+		cliOptions.Wg.Wait()
 
 		return nil
 	},

@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	brutecat "github.com/vitorfhc/brutecat/pkg"
 )
 
 var banner = `|\__/,|     ('\
@@ -26,6 +29,9 @@ type CLIOptions struct {
 	ContinueOnSuccess bool
 	StatsEvery        uint16
 	Ctx               context.Context
+	Cancel            context.CancelFunc
+	Engine            *brutecat.Engine
+	Wg                *sync.WaitGroup
 }
 
 var bruteCatOptions BruteCatOptions
@@ -44,6 +50,29 @@ var rootCmd = &cobra.Command{
 		if debug {
 			logrus.SetLevel(logrus.DebugLevel)
 		}
+
+		cliOptions.Ctx, cliOptions.Cancel = context.WithCancel(context.Background())
+
+		cliOptions.Wg = &sync.WaitGroup{}
+		cliOptions.Wg.Add(1)
+		go func() {
+			defer cliOptions.Wg.Done()
+			for {
+				if cliOptions.Engine != nil {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+			for {
+				select {
+				case <-cliOptions.Ctx.Done():
+					logrus.Info(cliOptions.Engine.RunStats)
+					return
+				case <-time.After(time.Duration(cliOptions.StatsEvery) * time.Second):
+					logrus.Info(cliOptions.Engine.RunStats)
+				}
+			}
+		}()
 
 		fmt.Println(banner)
 
