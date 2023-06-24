@@ -61,15 +61,20 @@ var ftpCmd = &cobra.Command{
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			defer logrus.Info("Engine finished")
 			engine.Run(ctx)
 		}()
 
-		wg.Add(1)
+		wgStats := sync.WaitGroup{}
+		wgStats.Add(1)
+		statsCtx, statsCancel := context.WithCancel(bgCtx)
+		defer statsCancel()
 		go func() {
-			defer wg.Done()
+			defer wgStats.Done()
+			defer logrus.Info(engine.RunStats)
 			for {
 				select {
-				case <-ctx.Done():
+				case <-statsCtx.Done():
 					return
 				case <-time.After(time.Duration(cliOptions.StatsEvery) * time.Second):
 					logrus.Info(engine.RunStats)
@@ -78,7 +83,8 @@ var ftpCmd = &cobra.Command{
 		}()
 
 		wg.Wait()
-		logrus.Info(engine.RunStats)
+		statsCancel()
+		wgStats.Wait()
 
 		return nil
 	},
