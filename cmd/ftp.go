@@ -68,15 +68,17 @@ var ftpCmd = &cobra.Command{
 		go func() {
 			defer wg.Done()
 			for {
-				logrus.Info(engine.RunStats)
-				if engine.RunStats.GetEnd() != nil {
+				select {
+				case <-ctx.Done():
 					return
+				case <-time.After(time.Duration(cliOptions.StatsEvery) * time.Second):
+					logrus.Info(engine.RunStats)
 				}
-				time.Sleep(time.Duration(cliOptions.StatsEvery) * time.Second)
 			}
 		}()
 
 		wg.Wait()
+		logrus.Info(engine.RunStats)
 
 		return nil
 	},
