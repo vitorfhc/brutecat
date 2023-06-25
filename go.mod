@@ -3,9 +3,9 @@ module github.com/vitorfhc/brutecat
 go 1.20
 
 require (
-	github.com/jlaffaye/ftp v0.2.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
+	github.com/vitorfhc/ftp v1.0.0
 )
 
 require (

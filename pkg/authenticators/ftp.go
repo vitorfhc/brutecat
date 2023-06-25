@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jlaffaye/ftp"
 	brutecat "github.com/vitorfhc/brutecat/pkg"
 	"github.com/vitorfhc/brutecat/pkg/utils"
+	"github.com/vitorfhc/ftp"
 )
 
 type FTP struct {
@@ -32,7 +32,7 @@ func (a *FTP) Authenticate(ctx context.Context, creds brutecat.Credentials) (boo
 	defer conn.Quit()
 
 	err = utils.RunWithContext(ctx, func() error {
-		return conn.Login(creds.Username, creds.Password)
+		return conn.Login(creds.Username, creds.Password, false)
 	})
 	if err != nil && strings.Contains(err.Error(), "530") {
 		return false, nil
